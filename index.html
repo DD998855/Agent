@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我终于搞懂 Agent 是什么意思了</title>
+
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap");
+
+    @font-face {
+      font-family: "PP Neue Montreal";
+      src: local("PP Neue Montreal");
+    }
+
+    :root {
+      --bg: #03060d;
+      --card: rgba(8, 13, 25, 0.78);
+      --card-blue: rgba(10, 26, 52, 0.78);
+      --text: #edf4ff;
+      --muted: #aebbd2;
+      --blue: #65a8ff;
+      --cyan: #73f2ff;
+      --purple: #9b7cff;
+      --orange: #ffbb73;
+      --line: rgba(101, 168, 255, 0.26);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 80% 8%, rgba(58, 124, 255, 0.22), transparent 28%),
+        radial-gradient(circle at 15% 42%, rgba(125, 88, 255, 0.13), transparent 28%),
+        linear-gradient(180deg, #02040a 0%, #061124 45%, #03060d 100%);
+      color: var(--text);
+      font-family: "Noto Serif SC", serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 38px 38px;
+      opacity: 0.55;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1), transparent 86%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+      opacity: 0.07;
+    }
+
+    .en {
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .page {
+      position: relative;
+      z-index: 2;
+      width: min(100%, 480px);
+      margin: 0 auto;
+      padding: 0 16px 72px;
+    }
+
+    .opening-gif {
+      width: calc(100% + 32px);
+      margin-left: -16px;
+      height: auto;
+      display: block;
+      border-bottom: 1px solid rgba(101, 168, 255, 0.18);
+    }
+
+    .hero {
+      margin-top: 22px;
+      padding: 30px 24px 32px;
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, rgba(10, 16, 31, .95), rgba(4, 8, 18, .82)),
+        radial-gradient(circle at 82% 18%, rgba(101, 168, 255, .34), transparent 38%);
+      border: 1px solid rgba(101, 168, 255, 0.34);
+      box-shadow:
+        0 20px 70px rgba(0,0,0,.42),
+        inset 0 0 70px rgba(101,168,255,.07);
+    }
+
+    .hero::before {
+      content: "AGENT";
+      position: absolute;
+      right: -22px;
+      bottom: -18px;
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      font-size: 76px;
+      font-weight: 800;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(101,168,255,.18);
+      letter-spacing: -0.08em;
+      opacity: .8;
+    }
+
+    .kicker {
+      position: relative;
+      z-index: 1;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      font-size: 38px;
+      line-height: 1.18;
+      letter-spacing: -0.06em;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .agent-word {
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      color: var(--blue);
+      text-shadow: 0 0 24px rgba(101,168,255,.52);
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      position: relative;
+      z-index: 1;
+      font-size: 16px;
+      line-height: 1.9;
+      color: #c8d4e8;
+    }
+
+    .hl {
+      color: var(--blue);
+      font-weight: 800;
+      text-shadow: 0 0 16px rgba(101,168,255,.25);
+    }
+
+    .section {
+      margin: 24px 0;
+    }
+
+    .section-card {
+      padding: 26px 22px;
+      border-radius: 26px;
+      background:
+        linear-gradient(145deg, rgba(9, 14, 27, .9), rgba(7, 11, 22, .78));
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow: 0 18px 60px rgba(0,0,0,.28);
+      backdrop-filter: blur(18px);
+    }
+
+    .section-card.blue-card {
+      background:
+        linear-gradient(145deg, rgba(12, 31, 61, .86), rgba(6, 11, 24, .82)),
+        radial-gradient(circle at 90% 0%, rgba(101,168,255,.22), transparent 42%);
+      border-color: rgba(101,168,255,.28);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 23px;
+      line-height: 1.35;
+      margin-bottom: 16px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .mark {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: radial-gradient(circle, var(--cyan), var(--blue) 55%, transparent 60%);
+      box-shadow: 0 0 18px rgba(115,242,255,.58);
+    }
+
+    p {
+      font-size: 15.8px;
+      line-height: 2.02;
+      color: #d9e1f0;
+      margin-bottom: 17px;
+      text-align: justify;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    .big-line {
+      margin: 46px auto;
+      text-align: center;
+      font-size: 36px;
+      line-height: 1.35;
+      font-weight: 900;
+      letter-spacing: -0.06em;
+    }
+
+    .big-line span {
+      background: linear-gradient(90deg, var(--blue), var(--cyan), var(--purple));
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .flow {
+      margin-top: 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .flow-label {
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.11);
+    }
+
+    .flow-chain {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      padding: 13px;
+      border-radius: 18px;
+      background: rgba(3, 8, 18, .68);
+      border: 1px solid rgba(101,168,255,.18);
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: #dfe8ff;
+      background: rgba(101,168,255,.12);
+      border: 1px solid rgba(101,168,255,.26);
+      white-space: nowrap;
+    }
+
+    .arrow {
+      color: var(--blue);
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      position: relative;
+      padding: 20px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(101,168,255,.2);
+      background:
+        radial-gradient(circle at 92% 10%, rgba(101,168,255,.18), transparent 38%),
+        rgba(8, 14, 28, .84);
+    }
+
+    .mini-card:nth-child(2) {
+      border-color: rgba(115,242,255,.24);
+      background:
+        radial-gradient(circle at 92% 10%, rgba(115,242,255,.16), transparent 38%),
+        rgba(8, 14, 28, .84);
+    }
+
+    .mini-card .num {
+      position: absolute;
+      right: 14px;
+      top: -2px;
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      color: rgba(255,255,255,.045);
+    }
+
+    .mini-card h3 {
+      font-size: 19px;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -0.03em;
+    }
+
+    .mini-card p {
+      font-size: 14.6px;
+      line-height: 1.9;
+      color: #bac7dd;
+      text-align: left;
+    }
+
+    .quote {
+      margin: 34px 0;
+      padding: 28px 24px;
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(101,168,255,.2), rgba(155,124,255,.13)),
+        rgba(255,255,255,.04);
+      border: 1px solid rgba(115,242,255,.22);
+      box-shadow: 0 0 52px rgba(101,168,255,.12);
+    }
+
+    .quote p {
+      font-size: 29px;
+      line-height: 1.55;
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: -0.055em;
+      text-align: left;
+    }
+
+    .quote em {
+      color: var(--cyan);
+      font-style: normal;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .task {
+      min-height: 104px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .task .icon {
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    .task span {
+      color: #dbe5f8;
+      font-size: 14.2px;
+      line-height: 1.55;
+    }
+
+    .warning {
+      padding: 24px 22px;
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(255,187,115,.14), rgba(101,168,255,.08)),
+        rgba(255,255,255,.04);
+      border: 1px solid rgba(255,187,115,.22);
+    }
+
+    .warning-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .warning-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 17px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      background: rgba(255,187,115,.15);
+      border: 1px solid rgba(255,187,115,.28);
+    }
+
+    .warning .section-title {
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    .final {
+      margin-top: 38px;
+      padding: 36px 24px 40px;
+      border-radius: 30px;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(115,242,255,.16), transparent 34%),
+        linear-gradient(145deg, rgba(15, 45, 92, .75), rgba(7, 10, 20, .88));
+      border: 1px solid rgba(115,242,255,.24);
+      box-shadow:
+        0 26px 90px rgba(0,0,0,.38),
+        0 0 70px rgba(101,168,255,.13);
+    }
+
+    .final .label {
+      color: var(--cyan);
+      letter-spacing: .13em;
+      font-size: 12px;
+      margin-bottom: 22px;
+      text-transform: uppercase;
+      font-family: "PP Neue Montreal", Arial, sans-serif;
+    }
+
+    .final h2 {
+      font-size: 32px;
+      line-height: 1.42;
+      letter-spacing: -0.06em;
+      margin-bottom: 20px;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .final p {
+      color: #dce8ff;
+      font-size: 15.5px;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 34px;
+      text-align: center;
+      color: #71819d;
+      font-size: 12.5px;
+      line-height: 1.8;
+    }
+
+    @media (min-width: 700px) {
+      .page {
+        width: min(680px, calc(100% - 48px));
+      }
+
+      .opening-gif {
+        width: 100%;
+        margin-left: 0;
+        border-radius: 0 0 26px 26px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <img class="opening-gif" src="img/开场.gif_tmp" alt="云笛说开场动效" />
+
+    <section class="hero">
+      <div class="kicker en">AI CONCEPT NOTE · 001</div>
+      <h1>我终于搞懂 <span class="agent-word">Agent</span> 是什么意思了</h1>
+      <p class="subtitle">
+        它不是又一个高冷术语，而是 AI 正在从<span class="hl">“会回答”</span>走向<span class="hl">“会做事”</span>的一个重要变化。
+      </p>
+    </section>
+
+    <section class="section">
+      <div class="section-card blue-card">
+        <h2 class="section-title"><span class="mark"></span>先用一句话说清楚</h2>
+        <p>
+          最近 AI 圈里经常出现一个词：<span class="hl en">Agent</span>。如果你平时用过豆包、元宝、DeepSeek、Kimi，应该已经很熟悉 AI 能帮我们写文案、查资料、总结内容、翻译文字这些事情了。所以看到 Agent 的时候，很多人会自然地想：这不还是 AI 吗？为什么又换了一个新名字？
+        </p>
+        <p>
+          其实 Agent 的重点不是“它能不能回答你”，而是“它能不能为了完成一个目标，自己拆步骤、调用工具、整理结果”。用大白话说，以前的 AI 更像你手里的一个聪明工具，而 Agent 更像一个可以被你安排任务的助手。
+        </p>
+      </div>
+    </section>
+
+    <div class="big-line">
+      从 <span>回答问题</span><br />
+      到 <span>完成任务</span>
+    </div>
+
+    <section class="section">
+      <div class="section-card">
+        <h2 class="section-title"><span class="mark"></span>区别到底在哪里？</h2>
+        <p>
+          比如你要做一份旅行攻略。以前你可能会一步一步问 AI：先推荐城市景点，再让它安排路线，再让它控制预算，再让它整理成表格。虽然 AI 很有用，但整个过程中，其实还是你在指挥它，你要不断补充要求、调整方向、检查内容。
+        </p>
+        <p>
+          但 Agent 的思路是，你可以直接告诉它一个更完整的目标，比如：“帮我做一个杭州两天一夜旅行攻略，预算控制在1500以内，想吃本地小吃，路线不要太累，最后整理成适合发给朋友看的版本。”然后它会自己去理解任务，拆成几个步骤，最后给你一个相对完整的结果。
+        </p>
+
+        <div class="flow">
+          <div class="flow-row">
+            <div class="flow-label en">AI</div>
+            <div class="flow-chain">
+              <span class="pill">你提问</span>
+              <span class="arrow">→</span>
+              <span class="pill">AI 回答</span>
+              <span class="arrow">→</span>
+              <span class="pill">继续追问</span>
+            </div>
+          </div>
+
+          <div class="flow-row">
+            <div class="flow-label en">Agent</div>
+            <div class="flow-chain">
+              <span class="pill">你给目标</span>
+              <span class="arrow">→</span>
+              <span class="pill">拆步骤</span>
+              <span class="arrow">→</span>
+              <span class="pill">调工具</span>
+              <span class="arrow">→</span>
+              <span class="pill">出结果</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="mini-card">
+            <div class="num en">01</div>
+            <h3>普通 AI 更像工具</h3>
+            <p>你需要一步一步告诉它做什么，它根据你的指令回答。它很聪明，但节奏主要由你来推动。</p>
+          </div>
+
+          <div class="mini-card">
+            <div class="num en">02</div>
+            <h3><span class="en">Agent</span> 更像助手</h3>
+            <p>你给它目标，它会尝试自己拆任务、走流程、调用工具，最后完成一个结果。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quote">
+      <p>
+        Agent 的重点不是<br />
+        <em>“更会聊天”</em>，<br />
+        而是开始变得<br />
+        <em>“更会干活”</em>。
+      </p>
+    </section>
+
+    <section class="section">
+      <div class="section-card">
+        <h2 class="section-title"><span class="mark"></span>为什么这个变化重要？</h2>
+        <p>
+          因为很多人真正需要的，不是一个“特别会聊天”的 AI，而是一个真的能帮自己省时间、做事情的系统。比如做 PPT、整理会议记录、分析 Excel、生成网页、剪视频、写代码、管理资料，这些事情很多已经不只是“回答问题”，而是需要 AI 连续完成一串动作。
+        </p>
+
+        <div class="task-grid">
+          <div class="task"><div class="icon">📄</div><span>读取文件<br />提炼重点</span></div>
+          <div class="task"><div class="icon">🌐</div><span>搜索网页<br />对比信息</span></div>
+          <div class="task"><div class="icon">📊</div><span>分析表格<br />生成结论</span></div>
+          <div class="task"><div class="icon">🎞️</div><span>整理素材<br />生成视频</span></div>
+          <div class="task"><div class="icon">💻</div><span>理解需求<br />生成代码</span></div>
+          <div class="task"><div class="icon">🧩</div><span>调用工具<br />完成流程</span></div>
+        </div>
+
+        <p style="margin-top: 24px;">
+          所以 Agent 的意义不是“AI 又多了一个名字”，而是 AI 的使用方式正在变化：从以前的单次问答，变成更连续、更自动化的任务执行。
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="warning">
+        <div class="warning-top">
+          <div class="warning-icon">⚠️</div>
+          <h2 class="section-title">但它现在还不是完美助手</h2>
+        </div>
+
+        <p>
+          现在的 Agent 也不是万能的。有时候它会理解错需求，有时候会漏掉步骤，有时候结果看起来很完整，但细节并不一定准确。所以现在用 Agent，仍然需要人来判断、检查和调整。
+        </p>
+        <p>
+          更准确地说，现在的 Agent 有点像一个干活很快、学习能力很强，但还需要你把关的助手。它能帮你节省很多重复劳动，但还不能完全替代人的判断力、审美和责任感。
+        </p>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="label en">Final Decode</div>
+      <h2>
+        以前的 AI，重点是<span class="hl">回答问题</span>。<br />
+        Agent 的重点，是开始帮你<span class="hl">完成任务</span>。
+      </h2>
+      <p>
+        它不是“另一个 AI 名词”，而是 AI 从聊天窗口走向真实工作流的一步。
+      </p>
+    </section>
+
+    <div class="footer">
+      <span class="en">AI CONCEPT NOTE</span> · 下一篇可以聊聊：<span class="en">Multi-Agent</span> 是什么？
+    </div>
+  </main>
+</body>
+</html>
